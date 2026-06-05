@@ -157,7 +157,23 @@ export default function QuizPage() {
     );
   }
 
-  if (!q) return null;
+  if (!q) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <PageHeader icon="🧠" title={t('quiz.header_title')} subtitle={t('quiz.header_sub')} />
+        <div className="card bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center">
+          <p className="text-slate-500 font-semibold mb-4">
+            {language === 'english'
+              ? 'No quizzes found. Please make sure your database is seeded and the backend is running.'
+              : 'క్విజ్‌లు ఏవీ కనుగొనబడలేదు. దయచేసి మీ డేటాబేస్ సీడ్ చేయబడిందని మరియు బ్యాకెండ్ నడుస్తుందని నిర్ధారించుకోండి.'}
+          </p>
+          <button className="btn-primary mx-auto shadow-md" onClick={reset}>
+            🔁 {language === 'english' ? 'Retry / Refresh' : 'మళ్ళీ ప్రయత్నించండి'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
