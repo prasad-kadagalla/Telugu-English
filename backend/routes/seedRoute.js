@@ -1,37 +1,12 @@
-/**
- * Database Seeder
- * Run: node data/seeder.js        → seed the database
- * Run: node data/seeder.js -d     → destroy all data
- */
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-
+const express = require('express');
+const router = express.Router();
 const User = require('../models/User');
 const Lesson = require('../models/Lesson');
 const Quiz = require('../models/Quiz');
 const Vocabulary = require('../models/Vocabulary');
+const bcrypt = require('bcryptjs');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/telugu_english_db';
-
-// ─── Sample Data ──────────────────────────────────────────────────────────────
-
-const users = [
-  {
-    name: 'Admin User',
-    email: process.env.ADMIN_EMAIL || 'admin@teluguenglish.com',
-    password: process.env.ADMIN_PASSWORD || 'Admin@123',
-    role: 'admin',
-    school: 'HQ',
-    class: '',
-  },
-  { name: 'Priya Sharma', email: 'priya@student.com', password: 'Student@123', school: 'ZP High School Vizag', class: '9th', totalPoints: 980 },
-  { name: 'Ravi Kumar',   email: 'ravi@student.com',  password: 'Student@123', school: 'Govt High School Kurnool', class: '8th', totalPoints: 920 },
-  { name: 'Anitha Reddy', email: 'anitha@student.com',password: 'Student@123', school: 'MPP School Nellore', class: '10th', totalPoints: 870 },
-];
-
-const lessons = [
+const lessonsData = [
   {
     title: 'What is a Noun?',
     category: 'grammar',
@@ -150,7 +125,7 @@ const lessons = [
   },
 ];
 
-const quizzes = [
+const quizzesData = [
   { question: 'Which word is a NOUN?', questionTelugu: 'ఏ పదం నౌన్?', type: 'mcq', options: ['Run', 'Beautiful', 'School', 'Quickly'], correctAnswer: 2, category: 'grammar', difficulty: 'easy', explanation: 'School is the name of a place — that makes it a noun.', explanationTelugu: 'పాఠశాల అనేది ఒక స్థలం పేరు కాబట్టి అది నౌన్.', points: 10 },
   { question: 'Complete: "She ___ to school every day."', type: 'mcq', options: ['go', 'goes', 'going', 'gone'], correctAnswer: 1, category: 'grammar', difficulty: 'easy', explanation: 'With "she" (third person singular) we add "s" → goes.', points: 10 },
   { question: 'Which is an ADJECTIVE?', type: 'mcq', options: ['Jump', 'Quickly', 'Tall', 'Eat'], correctAnswer: 2, category: 'grammar', difficulty: 'easy', explanation: '"Tall" describes a noun — it is an adjective.', points: 10 },
@@ -165,7 +140,7 @@ const quizzes = [
   { question: 'Is this statement TRUE or FALSE? "All nouns are proper nouns."', type: 'true_false', options: ['True', 'False'], correctAnswer: 1, category: 'grammar', difficulty: 'easy', explanation: 'FALSE. Nouns can be common (book, dog) or proper (India, Ram).', points: 5 },
 ];
 
-const vocabulary = [
+const vocabData = [
   { word: 'School', meaning: 'పాఠశాల', phonetic: '/skuːl/', pronunciation: 'skool', exampleSentence: 'I go to school every day.', exampleTelugu: 'నేను రోజూ పాఠశాలకు వెళ్తాను.', category: 'school', difficulty: 'easy' },
   { word: 'Book', meaning: 'పుస్తకం', phonetic: '/bʊk/', pronunciation: 'book', exampleSentence: 'She reads a book at night.', category: 'school', difficulty: 'easy' },
   { word: 'Teacher', meaning: 'ఉపాధ్యాయుడు', phonetic: '/ˈtiːtʃər/', pronunciation: 'tee-cher', exampleSentence: 'The teacher explains the lesson clearly.', category: 'school', difficulty: 'easy' },
@@ -186,59 +161,66 @@ const vocabulary = [
   { word: 'Knowledge', meaning: 'జ్ఞానం', phonetic: '/ˈnɒlɪdʒ/', pronunciation: 'nol-ij', exampleSentence: 'Knowledge is power.', category: 'school', difficulty: 'medium' },
 ];
 
-// ─── Connect and Seed ─────────────────────────────────────────────────────────
-const seedDB = async () => {
-  await mongoose.connect(MONGO_URI);
-  console.log(`✅ Connected to MongoDB: ${mongoose.connection.host} / Database: ${mongoose.connection.name}`);
-
-  if (process.argv[2] === '-d') {
-    await Promise.all([
-      User.deleteMany(),
-      Lesson.deleteMany(),
-      Quiz.deleteMany(),
-      Vocabulary.deleteMany(),
-    ]);
-    console.log('🗑  All data destroyed.');
-    process.exit(0);
+router.post('/', async (req, res) => {
+  const { secret } = req.body;
+  if (secret !== 'seed_my_production_db_please') {
+    return res.status(401).json({ success: false, message: 'Unauthorized. Invalid secret key.' });
   }
 
-  // Hash passwords before inserting
-  const hashedUsers = await Promise.all(
-    users.map(async (u) => ({
-      ...u,
-      password: await bcrypt.hash(u.password, 12),
-    }))
-  );
+  try {
+    // 1. Clean existing records
+    await User.deleteMany();
+    await Lesson.deleteMany();
+    await Quiz.deleteMany();
+    await Vocabulary.deleteMany();
 
-  await User.deleteMany();
-  await Lesson.deleteMany();
-  await Quiz.deleteMany();
-  await Vocabulary.deleteMany();
+    // 2. Hash and seed default users
+    const rawUsers = [
+      { name: 'Admin User', email: process.env.ADMIN_EMAIL || 'admin@teluguenglish.com', password: process.env.ADMIN_PASSWORD || 'Admin@123', role: 'admin', school: 'HQ', class: '' },
+      { name: 'Priya Sharma', email: 'priya@student.com', password: 'Student@123', role: 'student', school: 'ZP High School Vizag', class: '9th', totalPoints: 980 },
+      { name: 'Ravi Kumar',   email: 'ravi@student.com',  password: 'Student@123', role: 'student', school: 'Govt High School Kurnool', class: '8th', totalPoints: 920 },
+      { name: 'Anitha Reddy', email: 'anitha@student.com',password: 'Student@123', role: 'student', school: 'MPP School Nellore', class: '10th', totalPoints: 870 }
+    ];
 
-  const createdUsers = await User.insertMany(hashedUsers);
-  const admin = createdUsers.find((u) => u.role === 'admin');
+    const hashedUsers = await Promise.all(
+      rawUsers.map(async (u) => ({
+        ...u,
+        password: await bcrypt.hash(u.password, 12),
+      }))
+    );
 
-  await Lesson.insertMany(
-    lessons.map((l) => ({
+    const createdUsers = await User.insertMany(hashedUsers);
+    const admin = createdUsers.find((u) => u.role === 'admin');
+
+    // 3. Seed Lessons with inline slugs
+    const formattedLessons = lessonsData.map((l) => ({
       ...l,
       slug: l.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-').slice(0, 80),
-      createdBy: admin._id,
-    }))
-  );
-  await Quiz.insertMany(quizzes.map((q) => ({ ...q, createdBy: admin._id })));
-  await Vocabulary.insertMany(vocabulary.map((v) => ({ ...v, createdBy: admin._id })));
+      createdBy: admin._id
+    }));
+    const createdLessons = await Lesson.insertMany(formattedLessons);
 
-  console.log(`✅ Seeded: ${createdUsers.length} users, ${lessons.length} lessons, ${quizzes.length} quizzes, ${vocabulary.length} vocabulary words`);
-  console.log('\n🔑 Admin login:');
-  console.log(`   Email:    ${process.env.ADMIN_EMAIL || 'admin@teluguenglish.com'}`);
-  console.log(`   Password: ${process.env.ADMIN_PASSWORD || 'Admin@123'}`);
-  console.log('\n👩‍🎓 Sample student login:');
-  console.log('   Email:    priya@student.com');
-  console.log('   Password: Student@123');
-  process.exit(0);
-};
+    // 4. Seed Quizzes
+    const formattedQuizzes = quizzesData.map((q) => ({ ...q, createdBy: admin._id }));
+    const createdQuizzes = await Quiz.insertMany(formattedQuizzes);
 
-seedDB().catch((err) => {
-  console.error('❌ Seeder error:', err.message);
-  process.exit(1);
+    // 5. Seed Vocabulary
+    const formattedVocab = vocabData.map((v) => ({ ...v, createdBy: admin._id }));
+    const createdVocab = await Vocabulary.insertMany(formattedVocab);
+
+    res.json({
+      success: true,
+      message: 'Cloud Database successfully seeded!',
+      counts: {
+        users: createdUsers.length,
+        lessons: createdLessons.length,
+        quizzes: createdQuizzes.length,
+        vocabulary: createdVocab.length
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
+
+module.exports = router;

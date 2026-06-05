@@ -68,6 +68,7 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/vocabulary', vocabularyRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/seed-db', require('./routes/seedRoute'));
 
 // ─── Error Handlers ─────────────────────────────────────────────────────────
 app.use(notFound);
