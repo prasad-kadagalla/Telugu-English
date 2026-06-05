@@ -66,7 +66,6 @@ const vocabularySchema = new mongoose.Schema(
   }
 );
 
-vocabularySchema.index({ word: 1 });
 vocabularySchema.index({ category: 1, difficulty: 1 });
 
 module.exports = mongoose.model('Vocabulary', vocabularySchema);

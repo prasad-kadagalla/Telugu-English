@@ -93,7 +93,6 @@ lessonSchema.pre('save', function (next) {
 
 // ─── Indexes ─────────────────────────────────────────────────────────────────
 lessonSchema.index({ category: 1, order: 1 });
-lessonSchema.index({ slug: 1 });
 lessonSchema.index({ isPublished: 1 });
 
 module.exports = mongoose.model('Lesson', lessonSchema);
