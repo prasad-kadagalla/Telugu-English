@@ -206,10 +206,23 @@ export default function QuizPage() {
         <div className="space-y-2 mb-5">
           {q.options.map((opt, i) => {
             let cls = 'flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-200 font-semibold text-sm ';
-            if (!answered) cls += 'border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:translate-x-0.5';
-            else if (i === (result?.correctAnswer ?? q.correctAnswer)) cls += 'border-emerald-400 bg-emerald-50 text-emerald-800';
-            else if (i === selected && !result?.isCorrect) cls += 'border-red-400 bg-red-50 text-red-800';
-            else cls += 'border-slate-200 text-slate-400 cursor-default';
+            if (!answered) {
+              cls += 'border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:translate-x-0.5';
+            } else if (!result) {
+              if (i === selected) {
+                cls += 'border-blue-400 bg-blue-50 text-blue-700 animate-pulse';
+              } else {
+                cls += 'border-slate-100 text-slate-300 cursor-default';
+              }
+            } else {
+              if (i === result.correctAnswer) {
+                cls += 'border-emerald-400 bg-emerald-50 text-emerald-800';
+              } else if (i === selected && !result.isCorrect) {
+                cls += 'border-red-400 bg-red-50 text-red-800';
+              } else {
+                cls += 'border-slate-200 text-slate-400 cursor-default';
+              }
+            }
 
             return (
               <div key={i} className={cls} onClick={() => handleSelect(i)}>
@@ -217,8 +230,8 @@ export default function QuizPage() {
                   {String.fromCharCode(65 + i)}
                 </span>
                 <span className="flex-1">{opt}</span>
-                {answered && i === (result?.correctAnswer ?? q.correctAnswer) && <span className="text-emerald-500 text-lg font-bold">✓</span>}
-                {answered && i === selected && i !== (result?.correctAnswer ?? q.correctAnswer) && <span className="text-red-500 text-lg font-bold">✗</span>}
+                {result && i === result.correctAnswer && <span className="text-emerald-500 text-lg font-bold">✓</span>}
+                {result && i === selected && !result.isCorrect && <span className="text-red-500 text-lg font-bold">✗</span>}
               </div>
             );
           })}
