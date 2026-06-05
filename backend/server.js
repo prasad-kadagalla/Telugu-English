@@ -17,6 +17,9 @@ const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 
 const app = express();
 
+// Trust first proxy (required for rate-limiting on Render/reverse proxies)
+app.set('trust proxy', 1);
+
 // ─── Security Middleware ────────────────────────────────────────────────────
 app.use(helmet());
 app.use(cors({
@@ -74,7 +77,7 @@ app.use(errorHandler);
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log(`✅ MongoDB Connected: ${conn.connection.host} / Database: ${conn.connection.name}`);
   } catch (error) {
     console.error(`❌ MongoDB Error: ${error.message}`);
     process.exit(1);
